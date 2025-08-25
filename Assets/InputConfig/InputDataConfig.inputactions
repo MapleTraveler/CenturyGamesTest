@@ -1,0 +1,54 @@
+{
+    "name": "InputDataConfig",
+    "maps": [
+        {
+            "name": "Gameplay",
+            "id": "bb65d284-d3b2-497d-a9bf-44a1d88a33e0",
+            "actions": [
+                {
+                    "name": "Drag",
+                    "type": "Value",
+                    "id": "46e14bfe-1f56-481b-8357-a0f9cd05f168",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Click",
+                    "type": "Button",
+                    "id": "9caea035-60e3-4995-a3a8-99165dca5104",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "102b80da-0d09-47c1-b996-ee071ceac29d",
+                    "path": "<Touchscreen>/delta/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Drag",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7e289ab8-f919-4988-bf6a-3619c0a914bc",
+                    "path": "<Touchscreen>/primaryTouch/tap",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Click",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
