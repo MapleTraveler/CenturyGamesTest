@@ -21,11 +21,18 @@ namespace GameLogic.Input
     /// </summary>
     public class InputFacade : IInputFacade
     {
-        private InputActionAsset actions;// TODO:这里未来应该是通过配表进行初始化的
-        public IInputSnapShot Snapshot { get; }
-        // —— 快照（连续量/保持态）——
+        private readonly InputActionAsset _actions;// TODO:这里未来应该是通过配表进行初始化的
         
-        //public Vector2 LookDelta { get; }
+        private InputSnapshot _snapshot; // 快照具体实现
+        
+        // Action/Map 引用（单一事实源）
+        private InputActionMap _gameplayMap;
+
+        /// <summary>
+        /// 快照访问器 - 对外暴露接口
+        /// </summary>
+        public IInputSnapShot Snapshot => _snapshot;
+        
         
         /// <summary>
         /// 命令事件 - 命令模式的分发中心
@@ -34,22 +41,26 @@ namespace GameLogic.Input
         public event Action<IInputCommand> OnCommand;
 
         
-        // Action 引用（单一事实源）
-        private InputAction _drag;
         
-        
-        public void Init(InputActionAsset actionAsset)
+
+        public InputFacade(InputActionAsset actionAsset)
         {
-            actions = actionAsset;
-            _drag = actions.FindAction("Gameplay/Drag",true);
-            
-            _drag.Enable();
+            _actions = actionAsset;
+            _gameplayMap = actionAsset.FindActionMap("Gameplay", true);
+            //_drag = _actions.FindAction("Gameplay/Drag",true);
+            _snapshot = new InputSnapshot(_actions);
+        }
+        
+        
+        public void EnableActions()
+        {
+            _gameplayMap?.Enable();
         }
 
         // TODO: 输入更新的时序是否统一？
-        private void OnUpdate()
+        public void OnUpdate()
         {
-            
+            _snapshot.UpdateSnapshot();
         }
 
         
@@ -93,7 +104,7 @@ namespace GameLogic.Input
         {
             foreach (var m in mapName.Split('+'))
             {
-                var map = actions.FindActionMap(m.Trim(), true);
+                var map = _actions.FindActionMap(m.Trim(), true);
                 if (mapEnabled)
                 {
                     map.Enable();
