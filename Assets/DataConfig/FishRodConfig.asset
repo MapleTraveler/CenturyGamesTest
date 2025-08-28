@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8179aa8570604817afbb97ffa7b2ee2a, type: 3}
+  m_Name: FishRodConfig
+  m_EditorClassIdentifier: 
+  rodName: "\u9493\u9C7C\u7AFF"
+  fishHookData: {fileID: 11400000, guid: 8dbc1a7a4825a654e935530a2f5e07da, type: 2}
+  fishSinkerData: {fileID: 11400000, guid: f2d711ff3ce9a4740af70239aabc9397, type: 2}
+  fishingLineData: {fileID: 11400000, guid: 517cdfb26e03c78458f447ebfc00eefb, type: 2}
+  unselectableTime: 1
+  sinkSpeed: -1
+  ascentSpeed: 1.2
+  accelerateAscentSpeed: 2
