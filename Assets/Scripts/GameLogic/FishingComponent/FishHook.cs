@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace GameLogic.FishingComponent
 {
@@ -10,6 +11,11 @@ namespace GameLogic.FishingComponent
             pos.x += delta.x;
             pos.x = Mathf.Clamp(pos.x, -2.5f, 2.5f);
             transform.localPosition = pos;
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            
         }
     }
 }
