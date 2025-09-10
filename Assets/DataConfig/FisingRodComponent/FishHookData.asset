@@ -15,5 +15,5 @@ MonoBehaviour:
   componentName: "\u9C7C\u94A9"
   componentDescription: "\u7BA1\u7406\u53EF\u4EE5\u9493\u4E0A\u9C7C\u7684\u6570\u91CF\u548C\u672C\u4F53\u7684\u6C34\u5E73\u79FB\u52A8\u53C2\u6570"
   componentIcon: {fileID: 0}
-  horizontalSpeed: 1
-  maxHorizontalRange: 2.5
+  horizontalSpeed: 4
+  canHookFishCount: 10

@@ -61,7 +61,6 @@ namespace Manager
         private int   _maxObjectsPerSide = 5; // 每侧最大生成数量
         
         private float _objectRadius = 0.5f;  // 物理检测半径
-        private int   _maxSpawnAttempts = 12; // 兜底随机尝试次数
         private LayerMask _checkLayerMask = -1; // 碰撞检测层
 
         // 依赖
@@ -78,7 +77,6 @@ namespace Manager
             float minSpawnDistance = 2f,
             int   maxObjectsPerSide = 5,
             float objectRadius = 0.5f,
-            int   maxSpawnAttempts = 12,
             LayerMask? checkLayerMask = null)
         {
             _leftSpawnX    = mapBound.leftSpawnX;
@@ -93,57 +91,11 @@ namespace Manager
             _minSpawnDistance  = minSpawnDistance;
             _maxObjectsPerSide = maxObjectsPerSide;
             _objectRadius      = objectRadius;
-            _maxSpawnAttempts  = maxSpawnAttempts;
             _checkLayerMask    = checkLayerMask ?? -1;
 
             _cachedTopDownYList = BuildTopDownYList();
         }
         
-
-        /// <summary>
-        /// 在指定侧生成一条鱼
-        /// </summary>
-        /// <param name="sideHint"></param>
-        /// <returns></returns>
-        public BaseFish SpawnOne(ESpawnSide sideHint)
-        {
-            var side = ResolveSide(sideHint);
-            if (IsSideFull(side)) return null;
-
-            // 1) 自上而下栅格尝试
-            foreach (var y in _cachedTopDownYList)
-            {
-                var pos = new Vector3(GetSideX(side), y, 0f);
-                if (!IsPositionValid(pos, side)) continue;
-
-                float depth = _topBoundary - y; // 深度
-                var fish = _fishManager.SpawnAt(pos, depth, side, _policy);
-                if (fish != null) return fish;
-            }
-
-            // 2) 兜底随机
-            for (int i = 0; i < _maxSpawnAttempts; i++)
-            {
-                float y = Random.Range(_bottomBoundary + _objectRadius, _topBoundary - _objectRadius);
-                var pos = new Vector3(GetSideX(side), y, 0f);
-                if (!IsPositionValid(pos, side)) continue;
-
-                float depth = _topBoundary - y;
-                var fish = _fishManager.SpawnAt(pos, depth, side, _policy);
-                if (fish != null) return fish;
-            }
-
-            return null;
-        }
-
-        public void SpawnBatch(int perSideCount)
-        {
-            for (int i = 0; i < perSideCount; i++)
-            {
-                if (!IsSideFull(ESpawnSide.Left))  SpawnOne(ESpawnSide.Left);
-                if (!IsSideFull(ESpawnSide.Right)) SpawnOne(ESpawnSide.Right);
-            }
-        }
 
         /// <summary>
         /// 自上而下一次性遍历所有栅格；对每格只选择左/右一侧尝试生成

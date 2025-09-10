@@ -9,6 +9,7 @@
         public float rightSpawnX;    // 右侧重生点X坐标
         public float topBoundary;    // 垂直空间顶部
         public float bottomBoundary; // 垂直空间底部
-        
+        public float hookMinX;
+        public float hookMaxX;
     }
 }

@@ -15,4 +15,4 @@ MonoBehaviour:
   componentName: "\u9C7C\u7EBF"
   componentDescription: "\u7BA1\u7406\u6700\u5927\u4E0B\u6F5C\u6DF1\u5EA6"
   componentIcon: {fileID: 0}
-  maxLength: 10
+  maxLength: 100

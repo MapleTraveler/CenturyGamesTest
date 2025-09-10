@@ -16,8 +16,9 @@ MonoBehaviour:
   fishRodConfig: {fileID: 11400000, guid: 30986d7432afa9b4f905fd23ef262977, type: 2}
   fishHookPrefab: {fileID: 0}
   fishHookStartPos: {x: 0, y: 0}
-  fishCount: 5
   fishDataDict:
-    keys: 00000000
+    keys: 000000000100000003000000
     values:
     - {fileID: 11400000, guid: 5c4226a74fc429f4b9105459c6c739fe, type: 2}
+    - {fileID: 11400000, guid: 83118287d37a7834fbecf3fdaed32b61, type: 2}
+    - {fileID: 11400000, guid: 71021e274c1a325499786ace51df3a41, type: 2}

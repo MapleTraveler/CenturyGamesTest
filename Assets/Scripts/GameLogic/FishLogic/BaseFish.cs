@@ -19,10 +19,11 @@ namespace GameLogic.FishLogic
         protected BaseFishData _fishData;
         public string FishName => _fishData.fishName;
         public int FishValue => _fishData.fishValue; // 钱，这个或许不算运行的数据，理论上可以不放在这里
+        public EFishType FishType => _fishData.fishType;
         public int ID => _fishInstanceID;
         
         // ----- 运行时数据 -----
-        protected int _fishInstanceID => GetInstanceID();
+        protected int _fishInstanceID => gameObject.GetInstanceID();
         protected EFishState _fishState = EFishState.Swimming;
         protected bool _isEscaping = false;
         protected float _currentSpeed;
@@ -33,6 +34,7 @@ namespace GameLogic.FishLogic
         
         // ----- 组件区 -----
         Collider2D _collider2D;
+        SpriteRenderer _spriteRenderer;
         
         
         // ----- 核心函数  ----
@@ -42,9 +44,11 @@ namespace GameLogic.FishLogic
         /// </summary>
         public void Initialize(BaseFishData fishData, int startingDirection)
         {
+            if (hasInit) return;
             _fishData = fishData;
             _facingDirection = startingDirection;
             _collider2D = GetComponent<Collider2D>();
+            _spriteRenderer = GetComponent<SpriteRenderer>();
             OnInitialize(fishData);
             UpdateVisualDirection();
 
@@ -95,11 +99,20 @@ namespace GameLogic.FishLogic
             
         }
 
-        public virtual void Hooked(Transform hookTransform)
+        public virtual bool Hooked(Transform hookTransform)
         {
+            if(_fishState == EFishState.Hooked) return false;
+            //Debug.Log($"{ID},Hooked");
             _fishState = EFishState.Hooked;
             _HookedFollowPosition = hookTransform;
+            transform.position = hookTransform.position; // 直接传送到钩子位置
+            transform.SetParent(hookTransform); // 设置为钩子的子物体，跟随钩子移动
+            
             _collider2D.enabled = false; // 关闭碰撞体，防止被墙壁等物体卡住
+            Color c = _spriteRenderer.color; // 设置半透明，防止遮挡
+            c.a = 0.5f;
+            _spriteRenderer.color = c;
+            return true;
             // 其他被钩住的逻辑
         }
         

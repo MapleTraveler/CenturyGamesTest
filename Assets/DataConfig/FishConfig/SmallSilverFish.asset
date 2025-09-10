@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c86d6167a53142c1985a7bab6b60aebf, type: 3}
   m_Name: SmallSilverFish
   m_EditorClassIdentifier: 
-  fishName: 
+  fishName: "\u94F6\u8272\u5C0F\u9C7C"
   description: 
-  prefabPath: 
+  prefabPath: SmallSilverFish
   fishType: 3
-  fishSprite: {fileID: 0}
-  fishValue: 0
-  fishMoveSpeed: 0
+  fishSprite: {fileID: -809150742, guid: 818ef5359e727b74ebfa01058f4e3a1f, type: 3}
+  fishValue: 10
+  fishMoveSpeed: 4
   minDepth: 0
-  maxDepth: 0
+  maxDepth: 100
   weight: 1
   detectionRadius: 2
   escapeSpeed: 1.5

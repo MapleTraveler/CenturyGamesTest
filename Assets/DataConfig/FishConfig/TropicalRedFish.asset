@@ -16,11 +16,11 @@ MonoBehaviour:
   description: "\u666E\u901A\u9C7C"
   prefabPath: TropicalRedFish
   fishType: 0
-  fishSprite: {fileID: 0}
+  fishSprite: {fileID: 877908583, guid: 818ef5359e727b74ebfa01058f4e3a1f, type: 3}
   fishValue: 5
-  fishMoveSpeed: 6
+  fishMoveSpeed: 3
   minDepth: 0
   maxDepth: 50
-  weight: 3
+  weight: 1
   detectionRadius: 2
   escapeSpeed: 1.5

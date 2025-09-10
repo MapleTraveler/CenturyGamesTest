@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Data;
 using Data.FishData;
 using GameLogic.FishLogic;
 using UnityEngine;
@@ -51,16 +52,20 @@ namespace Manager
             return GenerateAndRegister(fishType.Value, pos, depth, side);
         }
         // 将钩住的鱼进行缓存
-        public void HookFish(int fishInstanceID, Transform hookTransform)
+        public bool TryHookFish(int fishInstanceID, Transform hookTransform)
         {
-           
-            if (_fishInstanceDic.ContainsKey(fishInstanceID) && !_hookedFishIds.Contains(fishInstanceID))
+            if (!_fishInstanceDic.ContainsKey(fishInstanceID) || _hookedFishIds.Contains(fishInstanceID)) return false;
+            // Debug.Log($"FishMgr Receive Hook Fish {fishInstanceID}");
+            BaseFish fish = _fishInstanceDic[fishInstanceID];
+            if (fish.Hooked(hookTransform))
             {
-                BaseFish fish = _fishInstanceDic[fishInstanceID];
-                fish.Hooked(hookTransform);
                 _hookedFishIds.Add(fishInstanceID);
+                return true;
             }
+
+            return false;
         }
+        
         
         
         
@@ -92,6 +97,22 @@ namespace Manager
                 if (info.side == side) 
                     yield return info.initialPos;
         }
+        public FishSettlementData GetSettlementData()
+        {
+            var dict = new Dictionary<BaseFishData, int>();
+            int totalValue = 0;
+            foreach (var id in _hookedFishIds)
+            {
+                if (_fishInstanceDic.TryGetValue(id, out var fish))
+                {
+                    var data = _fishDataDic[fish.FishType];
+                    dict.TryAdd(data, 0);
+                    dict[data]++;
+                    totalValue += data.fishValue;
+                }
+            }
+            return new FishSettlementData { caughtFishData = dict, totalValue = totalValue };
+        }
 
         // ----- 内部函数 -----
         
@@ -119,7 +140,7 @@ namespace Manager
                 return null;
             }
             // var radius = prefab.GetComponent<CircleCollider2D>()?.radius ?? 0.5f;
-            var go = Object.Instantiate(prefab, generatePos, Quaternion.identity);
+            var go = Object.Instantiate(prefab, generatePos, prefab.transform.rotation);
             var fish = go.GetComponent<BaseFish>();
             if (fish == null)
             {
@@ -164,6 +185,14 @@ namespace Manager
             _fishInstanceDic.Clear();
             _spawnInfos.Clear();
         }
+
+        public void Reset()
+        {
+            DestroyAllFish();         // 清除场景中所有鱼
+            _hookedFishIds.Clear();   // 清空钩住的鱼ID列表
+            _spawnInfos.Clear();      // 清空生成元数据
+        }
+        
     
         public void OnUpdate()
         {

@@ -17,6 +17,6 @@ MonoBehaviour:
   fishSinkerData: {fileID: 11400000, guid: f2d711ff3ce9a4740af70239aabc9397, type: 2}
   fishingLineData: {fileID: 11400000, guid: 517cdfb26e03c78458f447ebfc00eefb, type: 2}
   unselectableTime: 1
-  sinkSpeed: -1
-  ascentSpeed: 1.2
-  accelerateAscentSpeed: 2
+  sinkSpeed: -5
+  ascentSpeed: 5
+  accelerateAscentSpeed: 10

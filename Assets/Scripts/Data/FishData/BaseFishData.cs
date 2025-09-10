@@ -5,7 +5,7 @@ namespace Data.FishData
     public enum EFishType
     {
         TropicalRedFish,  // 红色小鱼
-        PufferFish,       // 河豚
+        Anglerfish,       // 鮟鱇鱼
         StripedFish,      // 条纹鱼
         SmallSilverFish   // 银色小鱼
     }
