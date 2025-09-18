@@ -1,41 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.Runtime.Abstractions;
+using Core.Runtime.CoreTypes;
 
 namespace Core.Runtime
 {
-    
-    public enum EntityCreateFailReason
-    {
-        None,                   // 创建成功
-        DataMissing,            // 数据缺失
-        FactoryReturnedNull,    // 工厂返回了空对象
-        DuplicateId,            // 重复的实体Id
-        Unknown                 // 未知错误
-    }
-    public enum RegisterFailReason 
-    { 
-        None,                   // 注册成功
-        NullEntity,             // 实体为空
-        DuplicateId             // 重复的实体Id
-    }
     /// <summary>
-    /// 实体工厂接口
-    /// </summary>
-    /// <typeparam name="TDataKey">数据类Id的数据类型</typeparam>
-    /// <typeparam name="TData">数据类的类型</typeparam>
-    /// <typeparam name="TEntity">实体类型</typeparam>
-    /// <typeparam name="TEntityKey">实体Id的数据类型</typeparam>
-    public interface IEntityFactory<in TDataKey, in TData, TEntity, out TEntityKey>
-    {
-        TEntity Create(TDataKey key, TData data, object context = null);
-        void Destroy(TEntity entity);
-        void Update(TEntity entity);
-        TEntityKey GetId(TEntity entity);
-    }
-    
-    
-    /// <summary>
-    /// 通用基类实体管理器，兼容 Mono和非Mono对象
+    /// 通用基类实体生命周期管理器，兼容 Mono和非Mono对象
     /// </summary>
     /// <typeparam name="TDataKey">数据类Id的数据类型</typeparam>
     /// <typeparam name="TData">数据类的类型</typeparam>
@@ -47,10 +18,14 @@ namespace Core.Runtime
         protected readonly Dictionary<TEntityKey, TEntity> instances = new();       // 实体实例字典
         
         protected readonly IEntityFactory<TDataKey, TData, TEntity,TEntityKey> entityFactory;
+        
+        // 系统条目：系统 + 优先级 + 可选过滤（只更新满足条件的实体）
+        private readonly List<(IEntityUpdater<TEntity> sys, int priority, Predicate<TEntity> filter)> _updaters = new();
+
 
         public event Action<TEntityKey, TEntity, TDataKey, TData, object> OnCreated;
         public event Action<TEntityKey, TEntity, TDataKey, TData, object> OnRegistered;
-        public event Action<TEntityKey, TEntity> OnDestroyed;
+        public event Action<TEntityKey, TEntity> OnSelfDestroyed;
         
         
         
@@ -82,11 +57,11 @@ namespace Core.Runtime
 
             switch (reason)
             {
-                case EntityCreateFailReason.DataMissing:
+                case EEntityCreateFailReason.DataMissing:
                     throw new KeyNotFoundException($"数据字典中未找到 Key={key} 对应的数据");
-                case EntityCreateFailReason.FactoryReturnedNull:
+                case EEntityCreateFailReason.FactoryReturnedNull:
                     throw new InvalidOperationException($"实体工厂创建实体失败，Key={key}");
-                case EntityCreateFailReason.DuplicateId:
+                case EEntityCreateFailReason.DuplicateId:
                     throw new InvalidOperationException($"实体管理器中已存在相同实体Id，无法重复创建");
                 default:
                     throw new InvalidOperationException("未知创建失败原因");
@@ -107,16 +82,16 @@ namespace Core.Runtime
             TDataKey key, 
             out TEntityKey entityId, 
             out TEntity entity,
-            out EntityCreateFailReason failReason,
+            out EEntityCreateFailReason failReason,
             object context = null)
         {
             entityId = default;
             entity = default;
-            failReason = EntityCreateFailReason.None;
+            failReason = EEntityCreateFailReason.None;
 
             if (!dataDic.TryGetValue(key, out var data))
             {
-                failReason = EntityCreateFailReason.DataMissing;
+                failReason = EEntityCreateFailReason.DataMissing;
                 return false;
             }
 
@@ -124,7 +99,7 @@ namespace Core.Runtime
             TEntity created = entityFactory.Create(key, data, context);
             if (created == null)
             {
-                failReason = EntityCreateFailReason.FactoryReturnedNull;
+                failReason = EEntityCreateFailReason.FactoryReturnedNull;
                 return false;
             }
 
@@ -135,7 +110,7 @@ namespace Core.Runtime
             {
                 // 重复则销毁刚创建的实体
                 entityFactory.Destroy(created);
-                failReason = EntityCreateFailReason.DuplicateId;
+                failReason = EEntityCreateFailReason.DuplicateId;
                 return false;
             }
 
@@ -162,17 +137,17 @@ namespace Core.Runtime
         /// <returns>注册结果</returns>
         public bool TryRegisterExternal(
             TEntity entity,
-            out RegisterFailReason reason,
+            out ERegisterFailReason reason,
             TDataKey key = default,
             object context = null)
         {
-            reason = RegisterFailReason.None;
-            if (entity == null) { reason = RegisterFailReason.NullEntity; return false; }
+            reason = ERegisterFailReason.None;
+            if (entity == null) { reason = ERegisterFailReason.NullEntity; return false; }
 
             var id = entityFactory.GetId(entity);
             if (!instances.TryAdd(id, entity))
             {
-                reason = RegisterFailReason.DuplicateId;
+                reason = ERegisterFailReason.DuplicateId;
                 return false;
             }
 
@@ -195,23 +170,105 @@ namespace Core.Runtime
             if (!instances.Remove(entityId, out TEntity entity))
                 return false;
             entityFactory.Destroy(entity);
-            OnDestroyed?.Invoke(entityId, entity);
+            OnSelfDestroyed?.Invoke(entityId, entity);
             return true;
         }
         
         
+        #region 更新系统
         
-        // TODO:这个要放在这里，工厂吗？（待问，待定）
+
         /// <summary>
-        /// 通过工厂执行管理器中物体的更新逻辑
+        /// 注册一个更新系统；可选：优先级（越小越先）、过滤器
         /// </summary>
-        public void UpdateAll()
+        public void AddUpdater(IEntityUpdater<TEntity> system, int priority = 0, Predicate<TEntity> filter = null)
         {
-            foreach (var entity in instances.Values)
+            if (system == null) throw new ArgumentNullException(nameof(system));
+            _updaters.Add((system, priority, filter));
+            // 如果系统实现了 ISystemOrder，用它的优先级
+            if (system is ISystemOrder ord) priority = ord.Priority;
+            // 重新排序（phase 以后再扩展，这里只按优先级）
+            _updaters.Sort((a, b) => a.priority.CompareTo(b.priority));
+        }
+
+        /// <summary>
+        /// 反注册更新系统
+        /// </summary>
+        public bool RemoveUpdater(IEntityUpdater<TEntity> system)
+        {
+            var idx = _updaters.FindIndex(t => ReferenceEquals(t.sys, system));
+            if (idx >= 0) { _updaters.RemoveAt(idx); return true; }
+            return false;
+        }
+
+        // 延迟队列：避免 Update 中直接改动 instances 造成枚举异常
+        private readonly Queue<TEntityKey> _deferredRemove = new();
+        private readonly List<(TDataKey key, object ctx)> _deferredCreate = new();
+
+        /// <summary>
+        /// 在本帧末尾移除实体（安全），更新循环中调用
+        /// </summary>
+        public void MarkForRemove(TEntityKey id) => _deferredRemove.Enqueue(id);
+
+        /// <summary>
+        /// 在本帧末尾创建实体（安全），更新循环内调用
+        /// </summary>
+        public void EnqueueCreate(TDataKey key, object context = null) => _deferredCreate.Add((key, context));
+
+        // 延迟刷新结算
+        private void FlushDeferred()
+        {
+            while (_deferredRemove.Count > 0)
             {
-                entityFactory.Update(entity);
+                var id = _deferredRemove.Dequeue();
+                Destroy(id);
+            }
+
+            if (_deferredCreate.Count > 0)
+            {
+                for (int i = 0; i < _deferredCreate.Count; i++)
+                {
+                    var (k, ctx) = _deferredCreate[i];
+                    TryCreate(k, out _, out _, ctx);
+                }
+                _deferredCreate.Clear();
             }
         }
+
+        /// <summary>
+        /// 通过已注册的系统执行更新逻辑（顺序：按优先级）
+        /// </summary>
+        public void UpdateAll(float deltaTime)
+        {
+            if (_updaters.Count == 0 || instances.Count == 0)
+            {
+                FlushDeferred(); // 即使没有系统，也处理一下延迟队列
+                return;
+            }
+
+            // 快照一份，避免遍历过程中被修改
+            // （这里用临时 List；若追求更少 GC，可做一个私有可复用缓存）
+            var snapshot = new List<TEntity>(instances.Count);
+            foreach (var e in instances.Values) snapshot.Add(e);
+
+            // 系统调度
+            for (int u = 0; u < _updaters.Count; u++)
+            {
+                var (sys, _, filter) = _updaters[u];
+                for (int i = 0; i < snapshot.Count; i++)
+                {
+                    var e = snapshot[i];
+                    if (filter == null || filter(e))
+                        sys.Update(e, deltaTime);
+                }
+            }
+
+            // 帧末 flush 增删
+            FlushDeferred();
+        }
+
+        #endregion
+
 
 
     }
